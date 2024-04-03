@@ -1,0 +1,19 @@
+name: readcurrent
+channels:
+  - bioconda
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pytorch=1.12.1
+  - torchvision==0.13.1
+  - torchaudio==0.12.1
+  - cudatoolkit=11.6
+  - minimap2=2.17
+  - samtools=1.16.1
+  - snakemake=7.32.4
+  - ont-fast5-api=4.1.1
+  - scikit-learn=1.2.2
+  - matplotlib=3.7.1
+  - tqdm=4.65.0

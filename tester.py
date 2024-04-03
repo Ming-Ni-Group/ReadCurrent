@@ -88,6 +88,7 @@ def test(model, reads, label, batch_size, cut, length,
 			t, f = inference(inputs, model, label, device)
 			true_pred += t
 			false_pred += f
+			inputs = []
 
 		if label == 1:
 			myprint('accepted pos reads: {}, rejected pos reads: {}, TP: {}, FN: {}'.format(
@@ -116,7 +117,9 @@ if __name__ == '__main__':
 	parser.add_argument("--gpu_ids", '-g', type=str, default=None, help="Specify the GPU to use, if not specified, use all GPUs or CPU, default None")
 	args = parser.parse_args()
 
-	# output file
+	# Create output folder
+	if not os.path.exists(args.output):
+		os.makedirs(args.output)
 	log = open(os.path.join(args.output, 'test.txt'), mode='w', encoding='utf-8')
 
 	# Print parameter information
@@ -134,22 +137,21 @@ if __name__ == '__main__':
 	if args.gpu_ids:
 		os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	if torch.cuda.device_count() > 1:
-		model = nn.DataParallel(model)
-	model.to(device)
-	myprint(f"Test in {device} {args.gpu_ids}", log)
+	model = nn.DataParallel(model).to(device)
+	myprint(f"test in {device} {args.gpu_ids}", log)
 
 	# Load model state
 	model.load_state_dict(torch.load(args.model_state))
+	myprint(f"Load model state from {args.model_state}", log)
 
 	# Load dataset and testing
 	reads = np.load(os.path.join(args.pos_data_folder, "test.npy"), allow_pickle=True)
-	myprint(f"load positive test data from {os.path.join(args.pos_data_folder, 'test.npy')}, shape: {reads.shape}", log)
+	myprint(f"Load positive test data from {os.path.join(args.pos_data_folder, 'test.npy')}, shape: {reads.shape}", log)
 	tp, fn, pos_infer_time = test(model, reads, 1, args.batch_size, args.cut, args.length,
 		args.patches, args.seq_length, args.stride, args.patch_size, log, device)
 	
 	reads = np.load(os.path.join(args.neg_data_folder, "test.npy"), allow_pickle=True)
-	myprint(f"load negative test data from {os.path.join(args.neg_data_folder, 'test.npy')}, shape: {reads.shape}", log)
+	myprint(f"Load negative test data from {os.path.join(args.neg_data_folder, 'test.npy')}, shape: {reads.shape}", log)
 	tn, fp, neg_infer_time = test(model, reads, 0, args.batch_size, args.cut, args.length,
 		args.patches, args.seq_length, args.stride, args.patch_size, log, device)
 

@@ -53,11 +53,6 @@ def train(model, pos_train_generator, neg_train_generator, pos_valid_generator, 
 	total_time, pos_epoch, neg_epoch = 0, 1, 1
 	patience, scheduler_num, i = 0, 0, 0
 
-	# Setting the tqdm progress bar
-	train_iter = tqdm.tqdm(pos_train_generator,
-							desc="training epoch %d" % (pos_epoch),
-							total=len(pos_train_generator),
-							bar_format="{l_bar}{r_bar}")
 	neg_iter = neg_train_generator.__iter__()
 	neg_val_iter = neg_valid_generator.__iter__()
 
@@ -65,7 +60,12 @@ def train(model, pos_train_generator, neg_train_generator, pos_valid_generator, 
 	start_time = time.time()
 	while pos_epoch <= args.epochs:
 		lr = optimizer.state_dict()['param_groups'][0]['lr']
-		
+		# Setting the tqdm progress bar
+		train_iter = tqdm.tqdm(pos_train_generator,
+								desc="training epoch %d" % (pos_epoch),
+								total=len(pos_train_generator),
+								bar_format="{l_bar}{r_bar}")
+
 		for pos_x, pos_y in train_iter:
 			i += 1
 			try:
@@ -167,21 +167,17 @@ def train(model, pos_train_generator, neg_train_generator, pos_valid_generator, 
 						lr = optimizer.state_dict()['param_groups'][0]['lr']
 					elif patience >= args.tolerance and scheduler_num >= 4:
 						total_time = time.time() - start_time
-						myprint("An early closure!", log)
-						myprint("train acc: {}, train loss: {}, total time: {:.4f}, average epoch time: {:.4f}".format(
-							best_acc, best_loss, total_time, (total_time / i) * len(pos_train_generator)), log)
-						return
+						return True, best_acc, best_loss, round(total_time, 2), round((total_time / i) * len(pos_train_generator), 2)
 				model.train()
 		pos_epoch += 1
 
 	total_time = time.time() - start_time
-	myprint("train acc: {}, train loss: {}, total time: {:.4f}, average epoch time: {:.4f}".format(
-		best_acc, best_loss, total_time, (total_time / i) * len(pos_train_generator)), log)
+	return False, best_acc, best_loss, round(total_time, 2), round((total_time / i) * len(pos_train_generator), 2)
 
 
 if __name__ == '__main__':
 	torch.manual_seed(3407)
-	torch.set_num_threads(2)
+	# torch.set_num_threads(2)
 	# Get command arguments
 	parser = argparse.ArgumentParser(description="Training model")
 	parser.add_argument("--pos_data_folder", '-p', type=str, required=True, help="Path to the positive dataset folder that contains train, valid, test files (.npy)")
@@ -224,32 +220,34 @@ if __name__ == '__main__':
 	if args.gpu_ids:
 		os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	if torch.cuda.device_count() > 1:
-		model = nn.DataParallel(model)
-	model.to(device)
-	myprint(f"Train in {device} {args.gpu_ids}", log)
+	model = nn.DataParallel(model).to(device)
+	myprint(f"train in {device} {args.gpu_ids}", log)
 
 	# Load model state
 	if args.interm is not None:
-		myprint(f"Load model from {args.interm}", log)
 		model.load_state_dict(torch.load(args.interm))
+		myprint(f"Load model state from {args.interm}", log)
 
 	if args.preprocess:
 		# load the training and validation set
-		myprint("===================== Load the training and validation set =====================", log)
-		pos_train_data = np.load(os.path.join(args.pos_data_folder, 'train.npy'), allow_pickle=True)
-		myprint(f"Load the positive training set from {os.path.join(args.pos_data_folder, 'train.npy')}, shape {pos_train_data.shape}", log)
-		neg_train_data = np.load(os.path.join(args.neg_data_folder, 'train.npy'), allow_pickle=True)
-		myprint(f"Load the negative training set from {os.path.join(args.neg_data_folder, 'train.npy')}, shape {neg_train_data.shape}", log)
+		myprint("\nLoad the training and validation set!", log)
+		try:
+			pos_train_data = np.load(os.path.join(args.pos_data_folder, 'train.npy'), allow_pickle=True)
+			myprint(f"Load the positive training set from {os.path.join(args.pos_data_folder, 'train.npy')}, shape {pos_train_data.shape}", log)
+			neg_train_data = np.load(os.path.join(args.neg_data_folder, 'train.npy'), allow_pickle=True)
+			myprint(f"Load the negative training set from {os.path.join(args.neg_data_folder, 'train.npy')}, shape {neg_train_data.shape}", log)
 
-		pos_valid_data = np.load(os.path.join(args.pos_data_folder, 'valid.npy'), allow_pickle=True)
-		myprint(f"Load the positive validation set from {os.path.join(args.pos_data_folder, 'valid.npy')}, shape {pos_valid_data.shape}", log)
-		neg_valid_data = np.load(os.path.join(args.neg_data_folder, 'valid.npy'), allow_pickle=True)
-		myprint(f"Load the negative validation set from {os.path.join(args.neg_data_folder, 'valid.npy')}, shape {neg_valid_data.shape}", log)
-		myprint(f"===================== Load finished! =====================\n", log)
+			pos_valid_data = np.load(os.path.join(args.pos_data_folder, 'valid.npy'), allow_pickle=True)
+			myprint(f"Load the positive validation set from {os.path.join(args.pos_data_folder, 'valid.npy')}, shape {pos_valid_data.shape}", log)
+			neg_valid_data = np.load(os.path.join(args.neg_data_folder, 'valid.npy'), allow_pickle=True)
+			myprint(f"Load the negative validation set from {os.path.join(args.neg_data_folder, 'valid.npy')}, shape {neg_valid_data.shape}", log)
+			myprint(f"Load finished!", log)
+		except:
+			myprint("The datasets does not exist, please check the path!", log)
+			exit(0)
 
 		# Preprocess the dataset
-		myprint("===================== Start preprocessing! =====================", log)
+		myprint("\nStart preprocessing!", log)
 		pos_train_data = train_normalization(pos_train_data, args.cut, args.length, args.tiling_fold,
 									   args.patches, args.seq_length, args.stride, args.patch_size)
 		myprint(f"The shape of the positive training set after preprocessing: {pos_train_data.shape}", log)
@@ -263,21 +261,25 @@ if __name__ == '__main__':
 		neg_valid_data = valid_normalization(neg_valid_data, args.cut, args.length,
 									   args.patches, args.seq_length, args.stride, args.patch_size)
 		myprint(f"The shape of the negative validation set after preprocessing: {neg_valid_data.shape}", log)
-		myprint("===================== Preprocessing finished! =====================\n", log)
+		myprint("Preprocessing finished!", log)
 
 	else:
 		# load the preprocessed training and validation set
-		myprint("===================== Load the preprocessed training and validation set =====================", log)
-		pos_train_data = np.load(os.path.join(args.pos_data_folder, 'train_preprocessed.npy'), allow_pickle=True)
-		myprint(f"Load the positive training set from {os.path.join(args.pos_data_folder, 'train_preprocessed.npy')}, shape {pos_train_data.shape}", log)
-		neg_train_data = np.load(os.path.join(args.neg_data_folder, 'train_preprocessed.npy'), allow_pickle=True)
-		myprint(f"Load the negative training set from {os.path.join(args.neg_data_folder, 'train_preprocessed.npy')}, shape {neg_train_data.shape}", log)
+		myprint("\nLoad the preprocessed training and validation set!", log)
+		try:
+			pos_train_data = np.load(os.path.join(args.pos_data_folder, 'train_preprocessed.npy'), allow_pickle=True)
+			myprint(f"Load the positive training set from {os.path.join(args.pos_data_folder, 'train_preprocessed.npy')}, shape {pos_train_data.shape}", log)
+			neg_train_data = np.load(os.path.join(args.neg_data_folder, 'train_preprocessed.npy'), allow_pickle=True)
+			myprint(f"Load the negative training set from {os.path.join(args.neg_data_folder, 'train_preprocessed.npy')}, shape {neg_train_data.shape}", log)
 
-		pos_valid_data = np.load(os.path.join(args.pos_data_folder, 'valid_preprocessed.npy'), allow_pickle=True)
-		myprint(f"Load the positive validation set from {os.path.join(args.pos_data_folder, 'valid_preprocessed.npy')}, shape {pos_valid_data.shape}", log)
-		neg_valid_data = np.load(os.path.join(args.neg_data_folder, 'valid_preprocessed.npy'), allow_pickle=True)
-		myprint(f"Load the negative validation set from {os.path.join(args.neg_data_folder, 'valid_preprocessed.npy')}, shape {neg_valid_data.shape}", log)
-		myprint(f"===================== Load finished! =====================\n", log)
+			pos_valid_data = np.load(os.path.join(args.pos_data_folder, 'valid_preprocessed.npy'), allow_pickle=True)
+			myprint(f"Load the positive validation set from {os.path.join(args.pos_data_folder, 'valid_preprocessed.npy')}, shape {pos_valid_data.shape}", log)
+			neg_valid_data = np.load(os.path.join(args.neg_data_folder, 'valid_preprocessed.npy'), allow_pickle=True)
+			myprint(f"Load the negative validation set from {os.path.join(args.neg_data_folder, 'valid_preprocessed.npy')}, shape {neg_valid_data.shape}", log)
+			myprint(f"Load finished!", log)
+		except:
+			myprint("The preprocessed datasets does not exist, please try adding the -preprocess parameter or executing preprocessor.py first!", log)
+			exit(0)
 
 	# DataLoader parameters
 	params = {'batch_size': args.batch_size // 2,
@@ -297,24 +299,27 @@ if __name__ == '__main__':
 	neg_valid_generator = DataLoader(neg_valid_set, **params)
 
 	# Training
-	myprint("===================== Start training! =====================", log)
-	train(model, pos_train_generator, neg_train_generator, pos_valid_generator, neg_valid_generator, log, device)
-	myprint("===================== Training finished! =====================\n", log)
-
-	# Load the test set
-	pos_test_data = np.load(os.path.join(args.pos_data_folder, 'test.npy'), allow_pickle=True)
-	myprint(f'load the positive test set from {os.path.join(args.pos_data_folder, "test.npy")}, shape {pos_test_data.shape}', log)
-	neg_test_data = np.load(os.path.join(args.neg_data_folder, 'test.npy'), allow_pickle=True)
-	myprint(f'load the negative test set from {os.path.join(args.neg_data_folder, "test.npy")}, shape {neg_test_data.shape}', log)
+	myprint("\nStart training!", log)
+	early_end, best_acc, best_loss, total_time, epoch_time = train(model, pos_train_generator, neg_train_generator, pos_valid_generator, neg_valid_generator, log, device)
+	myprint(f"best accuracy: {best_acc}, best loss: {best_loss}, total time: {total_time}, average epoch time: {epoch_time}", log)
+	if early_end:
+		myprint("An early closure", log)
+	myprint("Training finished!", log)
 
 	# Test
-	myprint("===================== Start testing! =====================", log)
+	myprint("\nStart testing!", log)
+	# Load the test set
+	pos_test_data = np.load(os.path.join(args.pos_data_folder, 'test.npy'), allow_pickle=True)
+	myprint(f'Load the positive test set from {os.path.join(args.pos_data_folder, "test.npy")}, shape {pos_test_data.shape}', log)
+	neg_test_data = np.load(os.path.join(args.neg_data_folder, 'test.npy'), allow_pickle=True)
+	myprint(f'Load the negative test set from {os.path.join(args.neg_data_folder, "test.npy")}, shape {neg_test_data.shape}', log)
+
 	model.load_state_dict(torch.load(os.path.join(args.output, "model.pth")))
 	tp, fn, pos_infer_time = test(model, pos_test_data, 1, args.batch_size, args.cut, args.length,
 			  args.patches, args.seq_length, args.stride, args.patch_size, log, device)
 	tn, fp, neg_infer_time = test(model, neg_test_data, 0, args.batch_size, args.cut, args.length,
 			  args.patches, args.seq_length, args.stride, args.patch_size, log, device)
-	
+
 	# Calculate evaluation index values
 	accuracy = round((tp + tn) * 100 / (tp + tn + fp + fn), 2)
 	precision = round(tp * 100 / (tp + fp), 2)
@@ -322,5 +327,5 @@ if __name__ == '__main__':
 	f1_score = round((2 * precision * recall) / (precision + recall), 2)
 	aver_infer_time = round((pos_infer_time + neg_infer_time) / 2, 4)
 	myprint(f"accuracy: {accuracy}, precision: {precision}, recall: {recall}, f1_score: {f1_score}, average inference time: {aver_infer_time}", log)
-	myprint("===================== Testing finished! =====================", log)
+	myprint("Testing finished!", log)
 	log.close()

@@ -79,14 +79,14 @@ if __name__ == '__main__':
 		print(f"{arg}: {getattr(args, arg)}")
 
 	# Load dataset
-	print("====================================== Load dataset ======================================")
+	print("\nLoad dataset!")
 	train_data = np.load(os.path.join(args.data_folder, "train.npy"), allow_pickle=True)
 	print(f"Successfully loaded training set from {os.path.join(args.data_folder, 'train.npy')}, shape: {train_data.shape}")
 	valid_data = np.load(os.path.join(args.data_folder, "valid.npy"), allow_pickle=True)
 	print(f"Successfully loaded validation set from {os.path.join(args.data_folder, 'valid.npy')}, shape: {valid_data.shape}")
 
 	# Normalize using modified Z-score and cut signal
-	print("====================================== Preprocess dataset ======================================")
+	print("\nPreprocess dataset!")
 	train_data = train_normalization(train_data, args.cut, args.length, args.tiling_fold,
 								  args.patches, args.seq_length, args.stride, args.patch_size)
 	print(f"Successfully preprocessed training set, shape: {train_data.shape}")
@@ -95,7 +95,7 @@ if __name__ == '__main__':
 	print(f"Successfully preprocessed validation set, shape: {valid_data.shape}")
 
 	# Create training data and validation data (npy)
-	print("====================================== save data ======================================")
+	print("\nSave data!")
 	np.save(os.path.join(args.data_folder, "train_preprocessed.npy"), train_data)
 	print(f"Successfully saved preprocessed training set to {os.path.join(args.data_folder, 'train_preprocessed.npy')}")
 	np.save(os.path.join(args.data_folder, "valid_preprocessed.npy"), valid_data)

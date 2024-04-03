@@ -1,25 +1,55 @@
-# ReadCurrent: A VDCNN based tool for fast and accurate nanopore selective sequencing
+# ReadCurrent: A VDCNN-based tool for fast and accurate nanopore selective sequencing
 
 
-## Initialization with Conda
-### 1. Create a virtual environment by conda
+## Install
+### Dependencies
 ```
-conda create -n ReadCurrent python==3.9
+python=3.9
+pytorch=1.12.1
+scikit-learn=1.2.2
+matplotlib=3.7.1
+tqdm=4.65.0
+snakemake=7.32.4
+ont-fast5-api=4.1.1
+minimap2=2.17
+samtools=1.16.1
+read_until_api=3.4.1
+```
+### Install ReadCurrent by Conda
+#### 1. [Install Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+#### 2. Download ReadCurrent source code
+#### 3. Create Conda virtual environment for ReadCurrent
+```
+conda env create -f environment.yaml
+```
+#### 4. [Install read_until_api](https://github.com/nanoporetech/read_until_api) (optional, only required for nanopore selective sequencing experiments)
+```
+# Install from github:
+pip install git+https://github.com/nanoporetech/read_until_api@master
+# Or from a local clone
+python setup.py install
 ```
 
-### 2. Install PyTorch
-```
-conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.6 -c pytorch -c conda-forge
-```
 
-### 3. Install other required libraries
+## Quickly start
+### train
 ```
-pip install -r requirements.txt
+python trainer.py -p example/zymo/ -n example/human/ -o example/result/zymo_human -g 0 -preprocess
+```
+or
+```
+python preprocessor.py -d example/zymo/
+python preprocessor.py -d example/human/
+python trainer.py -p example/zymo/ -n example/human/ -o example/result/zymo_human -g 0
+```
+### test
+```
+python tester.py -p example/zymo/ -n example/human/ -ms example/result/zymo_human/model.pth -o example/result/zymo_human/ -g 0
 ```
 
 
 ## Scripts
-### get_ids
+### get_ids.smk
 Get the ids of reads that were successfully aligned (mapping quality >= 10) to the reference genome
 
 ```
@@ -32,10 +62,10 @@ config arguments:
 
 Example:
 ```
-snakemake -s tools/get_ids.smk --config fastq_path={fastq_path} ref_path={ref_path} align_threads=16 output={output} --cores 1
+snakemake -s tools/get_ids.smk --config fastq_path={fastq_path} ref_path={ref_path} align_threads=16 output={output_path} --cores 1
 ```
 
-### read_fast5
+### read_fast5.py
 Constructing training, validation, and testing sets from the fast5 files of nanopore sequencing data
 
 ```
@@ -63,11 +93,11 @@ optional arguments:
 
 Example:
 ```
-python tools/read_fast5.py -dir {fast5_dir} -o {output} -ids {read_ids_path}
+python tools/read_fast5.py -dir {fast5_dir} -o {output_path} -ids {read_ids_path}
 ```
 
-### preprocessor
-Perform data preprocessing on training and validation sets from the dataset folder
+### preprocessor.py (optional)
+Perform data preprocessing on training and validation sets from the dataset folder (can also be done in train.py)
 
 ```
 usage: preprocessor.py [-h] --data_folder DATA_FOLDER [--cut CUT] [--tiling_fold TILING_FOLD] [--length LENGTH] [--patches] [--seq_length SEQ_LENGTH] [--stride STRIDE] [--patch_size PATCH_SIZE]
@@ -97,7 +127,7 @@ Example:
 python preprocessor.py -d {dataset_folder}
 ```
 
-### trainer
+### trainer.py
 Train the model on the specified dataset
 
 ```
@@ -147,10 +177,10 @@ optional arguments:
 
 Example:
 ```
-python trainer.py -p {pos_data_folder} -n {neg_data_folder} -o {output} -g 0
+python trainer.py -p {pos_data_folder} -n {neg_data_folder} -o {output_path} -g 0
 ```
 
-### tester
+### tester.py
 Test the model on the specified dataset
 
 ```
@@ -187,5 +217,40 @@ optional arguments:
 
 Example:
 ```
-python tester.py -p {pos_data_folder} -n {neg_data_folder} -ms {model_state} -o {output} -g 0
+python tester.py -p {pos_data_folder} -n {neg_data_folder} -ms {model_state_path} -o {output_path} -g 0
+```
+
+### ReadCurrent_adaptive.py
+Nanopore selective sequencing using ReadCurrent
+
+```
+usage: Read until API demonstration.. [-h] [--host HOST] [--port PORT] [--ca-cert CA_CERT] [--workers WORKERS] [--analysis_delay ANALYSIS_DELAY] [--run_time RUN_TIME]
+                                      [--unblock_duration UNBLOCK_DURATION] [--one_chunk] [--min_chunk_size MIN_CHUNK_SIZE] [--debug] [--verbose] --model_state MODEL_STATE
+                                      --output OUTPUT [--gpu_ids GPU_IDS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --host HOST           MinKNOW server host.
+  --port PORT           MinKNOW gRPC server port.
+  --ca-cert CA_CERT     Path to alternate CA certificate for connecting to MinKNOW.
+  --workers WORKERS     worker threads.
+  --analysis_delay ANALYSIS_DELAY
+                        Period to wait before starting analysis.
+  --run_time RUN_TIME   Period to run the analysis.
+  --unblock_duration UNBLOCK_DURATION
+                        Time (in seconds) to apply unblock voltage.
+  --one_chunk           Minimum read chunk size to receive.
+  --min_chunk_size MIN_CHUNK_SIZE
+                        Minimum read chunk size to receive. NOTE: this functionality is currently disabled; read chunks received will be unfiltered.
+  --debug               Print all debugging information
+  --verbose             Print verbose messaging.
+  --model_state MODEL_STATE
+                        Path of the model (a pth file)
+  --output OUTPUT       The output path
+  --gpu_ids GPU_IDS     Specify the GPU to use, if not specified, use all GPUs or CPU, default None
+```
+
+Example:
+```
+python read_until_api-3.4.1/read_until/ReadCurrent_adaptive.py --run_time 7200 --model_state {model_state_path} --output {output_path} --gpu_ids 0
 ```
