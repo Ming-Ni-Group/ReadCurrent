@@ -1,9 +1,10 @@
 # ReadCurrent: A VDCNN-based tool for fast and accurate nanopore selective sequencing
 
-
 ## Install
+
 ### Dependencies
-```
+
+```shell
 python=3.9
 pytorch=1.12.1
 scikit-learn=1.2.2
@@ -15,44 +16,57 @@ minimap2=2.17
 samtools=1.16.1
 read_until_api=3.4.1
 ```
+
 ### Install ReadCurrent by Conda
+
 #### 1. [Install Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+
 #### 2. Download ReadCurrent source code
+
 #### 3. Create Conda virtual environment for ReadCurrent
-```
+
+```shell
 conda env create -f environment.yaml
 ```
+
 #### 4. [Install read_until_api](https://github.com/nanoporetech/read_until_api) (optional, only required for nanopore selective sequencing experiments)
-```
+
+```shell
 # Install from github:
 pip install git+https://github.com/nanoporetech/read_until_api@master
 # Or from a local clone
 python setup.py install
 ```
 
-
 ## Quickly start
+
 ### train
-```
+
+```shell
 python trainer.py -p example/zymo/ -n example/human/ -o example/result/zymo_human -g 0 -preprocess
 ```
+
 or
-```
+
+```shell
 python preprocessor.py -d example/zymo/
 python preprocessor.py -d example/human/
 python trainer.py -p example/zymo/ -n example/human/ -o example/result/zymo_human -g 0
 ```
+
 ### test
-```
+
+```shell
 python tester.py -p example/zymo/ -n example/human/ -ms example/result/zymo_human/model.pth -o example/result/zymo_human/ -g 0
 ```
 
-
 ## Scripts
+
 ### get_ids.smk
+
 Get the ids of reads that were successfully aligned (mapping quality >= 10) to the reference genome
 
-```
+```shell
 config arguments:
   fastq_path            The directory where the fastq files is located, all fastq/fastq.gz files should be in the same folder
   ref_path              The path of the reference file
@@ -61,14 +75,16 @@ config arguments:
 ```
 
 Example:
-```
+
+```shell
 snakemake -s tools/get_ids.smk --config fastq_path={fastq_path} ref_path={ref_path} align_threads=16 output={output_path} --cores 1
 ```
 
 ### read_fast5.py
+
 Constructing training, validation, and testing sets from the fast5 files of nanopore sequencing data
 
-```
+```shell
 usage: read_fast5.py [-h] --file_dir FILE_DIR --output OUTPUT [--read_ids READ_IDS] [--min_length MIN_LENGTH] [--train_size TRAIN_SIZE] [--valid_size VALID_SIZE] [--test_size TEST_SIZE]
 
 Read fast5
@@ -92,14 +108,16 @@ optional arguments:
 ```
 
 Example:
-```
+
+```shell
 python tools/read_fast5.py -dir {fast5_dir} -o {output_path} -ids {read_ids_path}
 ```
 
 ### preprocessor.py (optional)
+
 Perform data preprocessing on training and validation sets from the dataset folder (can also be done in train.py)
 
-```
+```shell
 usage: preprocessor.py [-h] --data_folder DATA_FOLDER [--cut CUT] [--tiling_fold TILING_FOLD] [--length LENGTH] [--patches] [--seq_length SEQ_LENGTH] [--stride STRIDE] [--patch_size PATCH_SIZE]
 
 Data preprocessing
@@ -123,14 +141,16 @@ optional arguments:
 ```
 
 Example:
-```
+
+```shell
 python preprocessor.py -d {dataset_folder}
 ```
 
 ### trainer.py
+
 Train the model on the specified dataset
 
-```
+```shell
 usage: trainer.py [-h] --pos_data_folder POS_DATA_FOLDER --neg_data_folder NEG_DATA_FOLDER --output OUTPUT [--preprocess] [--cut CUT] [--tiling_fold TILING_FOLD] [--length LENGTH] [--patches]
                   [--seq_length SEQ_LENGTH] [--stride STRIDE] [--patch_size PATCH_SIZE] [--batch_size BATCH_SIZE] [--epochs EPOCHS] [--learning_rate LEARNING_RATE] [--tolerance TOLERANCE] [--interm INTERM]
                   [--num_workers NUM_WORKERS] [--gpu_ids GPU_IDS]
@@ -176,14 +196,16 @@ optional arguments:
 ```
 
 Example:
-```
+
+```shell
 python trainer.py -p {pos_data_folder} -n {neg_data_folder} -o {output_path} -g 0
 ```
 
 ### tester.py
+
 Test the model on the specified dataset
 
-```
+```shell
 usage: tester.py [-h] --pos_data_folder POS_DATA_FOLDER --neg_data_folder NEG_DATA_FOLDER --model_state MODEL_STATE --output OUTPUT [--batch_size BATCH_SIZE] [--cut CUT] [--length LENGTH] [--patches]
                  [--seq_length SEQ_LENGTH] [--stride STRIDE] [--patch_size PATCH_SIZE] [--gpu_ids GPU_IDS]
 
@@ -216,14 +238,16 @@ optional arguments:
 ```
 
 Example:
-```
+
+```shell
 python tester.py -p {pos_data_folder} -n {neg_data_folder} -ms {model_state_path} -o {output_path} -g 0
 ```
 
 ### ReadCurrent_adaptive.py
+
 Nanopore selective sequencing using ReadCurrent
 
-```
+```shell
 usage: Read until API demonstration.. [-h] [--host HOST] [--port PORT] [--ca-cert CA_CERT] [--workers WORKERS] [--analysis_delay ANALYSIS_DELAY] [--run_time RUN_TIME]
                                       [--unblock_duration UNBLOCK_DURATION] [--one_chunk] [--min_chunk_size MIN_CHUNK_SIZE] [--debug] [--verbose] --model_state MODEL_STATE
                                       --output OUTPUT [--gpu_ids GPU_IDS]
@@ -251,6 +275,11 @@ optional arguments:
 ```
 
 Example:
-```
+
+```shell
 python read_until_api-3.4.1/read_until/ReadCurrent_adaptive.py --run_time 7200 --model_state {model_state_path} --output {output_path} --gpu_ids 0
 ```
+
+## License
+
+[MIT](LICENSE)
