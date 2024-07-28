@@ -31,4 +31,4 @@ rule getid:
     output:
         "{output_path}/read_ids.txt"
     shell:
-        "samtools view -q 10 {input} | cut -f 1 | sort | uniq > {output}"
+        "samtools view -q 1 {input} | cut -f 1 | sort | uniq > {output}"

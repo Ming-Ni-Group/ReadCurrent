@@ -1,4 +1,9 @@
 # ReadCurrent: A VDCNN-based tool for fast and accurate nanopore selective sequencing
+ReadCurrent is a VDCNN-based computational tool for nanopore selective sequencing, which can rapidly identify target and non-target reads in real-time through raw current signals. 
+
+Raw current signals are generated in real-time when DNA molecules pass through nanopores, and these signals are read and rapidly analyzed by ReadCurrent to determine whether the DNA molecules are the targets. If not, the DNA molecules are ejected from the nanopores by reversing the voltage, making the nanopores available for sequencing other molecules.
+
+ReadCurrent has been tested using a MinION Mk1B device (R9.4.1 flow cell) and an NVIDIA RTX 3080 Ti on live sequencing runs.
 
 ## Install
 
