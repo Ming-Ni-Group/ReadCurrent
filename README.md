@@ -69,7 +69,7 @@ python tester.py -p example/zymo/ -n example/human/ -ms example/result/zymo_huma
 
 ### get_ids.smk
 
-Get the ids of reads that were successfully aligned (mapping quality >= 10) to the reference genome
+Get the ids of reads that were successfully aligned (mapping quality >= 1) to the reference genome
 
 ```shell
 config arguments:
