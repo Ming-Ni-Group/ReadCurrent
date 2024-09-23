@@ -2,11 +2,15 @@
 
 Nanopore selective sequencing allows the targeted sequencing of DNA of interest using computational approaches rather than experimental methods such as targeted multiplex polymerase chain reaction or hybridization capture. Compared to sequence-alignment strategies, deep learning (DL) models for classifying target and non-target DNA provide large speed advantages. However, the relatively low accuracy of these DL-based tools hinders their application in nanopore selective sequencing [[1-4](#reference)]. Here, we present a DL-based tool named ReadCurrent for nanopore selective sequencing, which takes electric currents as inputs. ReadCurrent employs a modified very deep convolutional neural network (VDCNN) architecture, enabling significantly lower computational costs for training and quicker inference compared to conventional VDCNN. 
 
-<img src="./fig/Figure-1.png" alt="figure1" width="400"/>
+<div style="text-align: center;">
+  <img src="./fig/Figure-1.png" alt="figure1" width="400"/>
+</div>
 
 We evaluated the performance of ReadCurrent across ten nanopore sequencing datasets spanning human, yeasts, bacteria, and viruses. We observed that ReadCurrent achieved a mean accuracy of 98.57% for classification, outperforming four other DL-based selective sequencing methods. In experimental validation that selectively sequenced microbial DNA from human DNA, ReadCurrent achieved an enrichment ratio of 2.85, which was higher than the 2.7 ratio achieved by MinKNOW using the sequence-alignment strategy. In summary, ReadCurrent can rapidly classify target and non-target DNA with high accuracy, providing an alternative in the toolbox for nanopore selective sequencing.
 
-<img src="./fig/Figure-5.png" alt="figure5" width="400"/>
+<div style="text-align: center;">
+  <img src="./fig/Figure-5.png" alt="figure5" width="400"/>
+</div>
 
 ## Install
 
